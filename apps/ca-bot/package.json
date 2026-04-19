@@ -1,0 +1,33 @@
+{
+  "name": "@ms/ca-bot",
+  "version": "1.0.0",
+  "description": "Community Agent Bot - Telegram Bot",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "NODE_OPTIONS=--dns-result-order=ipv4first tsx src/index.ts",
+    "start": "NODE_OPTIONS=--dns-result-order=ipv4first node dist/index.js",
+    "reboot": "lsof -ti:3002 | xargs kill -9 2>/dev/null; pnpm build && pnpm start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ms/database": "workspace:*",
+    "@ms/types": "workspace:*",
+    "@ms/utils": "workspace:*",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.5",
+    "https-proxy-agent": "^9.0.0",
+    "ioredis": "^5.10.1",
+    "node-cron": "^3.0.3",
+    "puppeteer": "^22.0.0",
+    "telegraf": "^4.15.0",
+    "winston": "^3.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/node-cron": "^3.0.11",
+    "tsx": "^4.7.1",
+    "typescript": "^5.3.3"
+  }
+}

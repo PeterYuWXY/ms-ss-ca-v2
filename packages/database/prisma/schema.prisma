@@ -1,0 +1,314 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Skills表
+model Skill {
+  id          String   @id @default(cuid())
+  name        String
+  version     String
+  description String
+  category    SkillCategory
+  config      Json     @default("{}")
+  stats       Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaigns   Campaign[]
+
+  @@index([category])
+}
+
+enum SkillCategory {
+  shilling
+  seo
+  kol
+  content
+}
+
+// Communities表
+model Community {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  platform    Platform @default(telegram)
+  language    String[]
+  memberCount Int      @default(0)
+  category    String
+  tags        String[]
+  rankings    Json     @default("{}")
+  activity    Json     @default("{}")
+  pricing     Json     @default("{}")
+  caBotId         String?
+  ownerWallet     String
+  ownerTelegramId String?   // Telegram user ID of the admin who registered
+  telegramHandle  String?   // @handle without @ (public groups only)
+  status          CommunityStatus @default(active)
+  // ── Matching & scoring ──────────────────────────────────────
+  scoreCache           Float    @default(0)    // composite score, refreshed daily
+  memberCountUpdatedAt DateTime?               // last time memberCount was synced from TG
+  referralCode         String?  @unique        // short code this community shares to refer others
+  referredBy           String?                 // communityId of the community that referred this one
+  referralCount        Int      @default(0)    // # of successful referrals (denormalized, updated by scoring job)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaigns   CampaignCommunity[]
+  executions  CampaignExecution[]
+
+  @@index([platform, status])
+  @@index([memberCount])
+  @@index([category])
+}
+
+enum Platform {
+  telegram
+}
+
+enum CommunityStatus {
+  active
+  inactive
+}
+
+// Campaigns表
+model Campaign {
+  id                  String   @id @default(cuid())
+  advertiserId        String
+  advertiserWallet    String
+  skillId             String
+  config              Json
+  status              CampaignStatus @default(draft)
+  timeline            Json     @default("{}")
+  performance         Json     @default("{}")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  skill               Skill    @relation(fields: [skillId], references: [id])
+  communities         CampaignCommunity[]
+  executions          CampaignExecution[]
+  payment             CampaignPayment?
+
+  @@index([advertiserId])
+  @@index([status])
+  @@index([skillId])
+  @@index([advertiserId, status, createdAt(sort: Desc)])
+}
+
+enum CampaignStatus {
+  draft
+  pending
+  active
+  completed
+  cancelled
+}
+
+// Campaign与Community关联表
+model CampaignCommunity {
+  id          String   @id @default(cuid())
+  campaignId  String
+  communityId String
+  status      CampaignCommunityStatus @default(pending)
+  createdAt   DateTime @default(now())
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, communityId])
+  @@index([campaignId])
+  @@index([communityId])
+}
+
+enum CampaignCommunityStatus {
+  pending
+  accepted
+  rejected
+  executing
+  completed
+}
+
+// CampaignExecutions表
+model CampaignExecution {
+  id          String   @id @default(cuid())
+  campaignId  String
+  communityId String
+  caId        String
+  status      ExecutionStatus @default(pending)
+  shillingData Json    @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  ca          CommunityAgent @relation(fields: [caId], references: [id])
+  payment     ExecutionPayment?
+
+  @@index([campaignId])
+  @@index([communityId])
+  @@index([caId])
+  @@index([status])
+  @@index([caId, status])
+}
+
+enum ExecutionStatus {
+  pending
+  accepted
+  rejected
+  executing
+  completed
+}
+
+// CommunityAgents表
+model CommunityAgent {
+  id          String   @id @default(cuid())
+  botId       String   @unique
+  ownerWallet String
+  name        String
+  reputation  Json     @default("{}")
+  apiKeyHash  String?
+  status      CAStatus @default(active)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  executions  CampaignExecution[]
+  earnings    Earning[]
+
+  @@index([botId])
+  @@index([ownerWallet])
+  @@index([status])
+}
+
+enum CAStatus {
+  active
+  inactive
+  suspended
+}
+
+// CampaignPayments表
+model CampaignPayment {
+  id          String   @id @default(cuid())
+  campaignId  String   @unique
+  totalAmount String   // BigInt as string
+  platformFee String
+  caReward    String
+  vaultAddress String?
+  txHash      String?  // Transaction hash for on-chain payment
+  status      PaymentStatus @default(pending)
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([status])
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  released
+  refunded
+}
+
+// ExecutionPayments表
+model ExecutionPayment {
+  id          String   @id @default(cuid())
+  executionId String   @unique
+  amount      String
+  status      PaymentStatus @default(pending)
+  txHash      String?
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  execution   CampaignExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@index([status])
+}
+
+// Earnings表 (CA收益记录)
+model Earning {
+  id          String   @id @default(cuid())
+  caId        String
+  campaignId  String
+  executionId String
+  amount      String
+  status      PaymentStatus @default(pending)
+  txHash      String?
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ca          CommunityAgent @relation(fields: [caId], references: [id], onDelete: Cascade)
+
+  @@index([caId])
+  @@index([status])
+}
+
+// Offers表
+model Offer {
+  id          String   @id @default(cuid())
+  campaignId  String
+  communityId String
+  caId        String
+  task        Json
+  reward      Json
+  deadline    DateTime
+  executionStart DateTime
+  executionEnd   DateTime
+  status      OfferStatus @default(pending)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([campaignId])
+  @@index([caId])
+  @@index([status])
+  @@index([caId, status])
+}
+
+enum OfferStatus {
+  pending
+  accepted
+  rejected
+  expired
+  completed
+  failed
+}
+
+// Advertisers表
+model Advertiser {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  name          String?
+  email         String?
+  totalSpent    String   @default("0")
+  createdAt     DateTime @default(now())
+
+  @@index([walletAddress])
+}
+
+// CommunityRatings表 (广告主对社区的评分)
+model CommunityRating {
+  id              String   @id @default(cuid())
+  campaignId      String
+  communityId     String
+  advertiserId    String
+  engagement      Int      // 1-5
+  relevance       Int      // 1-5
+  quality         Int      // 1-5
+  speed           Int      // 1-5
+  professionalism Int      // 1-5
+  comment         String?
+  createdAt       DateTime @default(now())
+
+  @@unique([campaignId, communityId, advertiserId])
+  @@index([campaignId])
+  @@index([communityId])
+  @@index([advertiserId])
+}

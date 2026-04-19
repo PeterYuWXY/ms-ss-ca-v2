@@ -1,0 +1,13 @@
+{
+  "network": "bscTestnet",
+  "chainId": "97",
+  "vaultAddress": "0xD00914d5EE3C426a97CcFBE7a79DAFC5aCB789F4",
+  "treasuryAddress": "0x53423D09eA9F45712720B5654dB58722484fA32f",
+  "deployer": "0x53423D09eA9F45712720B5654dB58722484fA32f",
+  "timestamp": "2026-04-13T11:29:02.284Z",
+  "tokens": {
+    "USDT": "0x337610d27c682E347C9cD60BD4b3b107C9d34dDd",
+    "USDC": "0x64544969ed7EBf5f083679233325356EbE738930",
+    "WBNB": "0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd"
+  }
+}

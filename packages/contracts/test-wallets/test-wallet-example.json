@@ -1,0 +1,16 @@
+{
+  "warning": "⚠️ 这是 BSC Testnet 测试专用钱包，仅用于测试支付流程！",
+  "createdAt": "2026-04-08T00:30:00.000Z",
+  "network": "BSC Testnet (chainId: 97)",
+  "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f7dC4e",
+  "fundRequest": {
+    "bnbFaucet": "https://testnet.bnbchain.org/faucet-smart",
+    "instructions": "访问水龙头，输入上述地址领取测试 BNB"
+  },
+  "usage": {
+    "metamaskImport": "将私钥导入 MetaMask 作为测试账户",
+    "frontendTesting": "用于在 localhost:3000 测试支付流程",
+    "contractInteraction": "与 MSCampaignVault 合约交互"
+  },
+  "note": "此钱包为测试生成，如有需要可重新生成新的测试钱包"
+}

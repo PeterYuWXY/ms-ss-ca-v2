@@ -1,0 +1,24 @@
+{
+  "name": "ms-ss-ca-v2",
+  "version": "1.0.0",
+  "description": "MS+SS+CA Marketing Platform - Decentralized Crypto Marketing Crowdsourcing",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @ms/database db:generate",
+    "db:migrate": "pnpm --filter @ms/database db:migrate",
+    "db:studio": "pnpm --filter @ms/database db:studio"
+  },
+  "devDependencies": {
+    "turbo": "^1.12.0",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
