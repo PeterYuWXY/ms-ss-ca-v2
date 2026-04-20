@@ -1,0 +1,6 @@
+{
+  "framework": "nextjs",
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "pnpm --filter @ms/types build && pnpm --filter @ms/utils build && pnpm --filter @ms/ms-web build",
+  "outputDirectory": "apps/ms-web/.next"
+}
