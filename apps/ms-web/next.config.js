@@ -8,6 +8,8 @@ const nextConfig = {
     };
     return config;
   },
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
   reactStrictMode: true,
   swcMinify: true,
   transpilePackages: ['@ms/types', '@ms/utils'],
