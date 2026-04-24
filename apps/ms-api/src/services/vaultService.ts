@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import { prisma } from '@ms/database';
+import { computeCommunityScore } from './communityScoring.js';
 
 // Minimal ABI — only the functions we call from the backend
 const VAULT_ABI = [
@@ -92,6 +93,19 @@ export async function settleCampaignOnChain(campaignId: string): Promise<void> {
     });
 
     console.log(`[Vault] Campaign ${campaignId} settled. Tx: ${receipt.hash}`);
+
+    // Refresh community scores in background — ratings now count toward next match
+    prisma.campaignCommunity
+      .findMany({ where: { campaignId }, select: { communityId: true } })
+      .then((ccs) =>
+        Promise.all(
+          ccs.map(async ({ communityId }) => {
+            const s = await computeCommunityScore(communityId);
+            await prisma.community.update({ where: { id: communityId }, data: { scoreCache: s } });
+          })
+        )
+      )
+      .catch((err) => console.error('[Vault] Post-settlement score refresh failed:', err));
   } catch (err) {
     console.error(`[Vault] Failed to settle campaign ${campaignId}:`, err);
     throw err;

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '@ms/database';
 import { calculatePricing } from '@ms/utils';
-import { matchCommunities } from '../services/communityScoring.js';
+import { matchCommunities, computeCommunityScore } from '../services/communityScoring.js';
 type PricingDuration = '1w' | '2w' | '4w';
 
 const router: Router = Router();
@@ -392,6 +392,9 @@ router.post('/:id/ratings', async (req: Request, res: Response): Promise<void> =
       update: { engagement, relevance, quality, speed, professionalism, comment },
     });
 
+    // Fire-and-forget: refresh community score + CA reputation
+    refreshAfterRating(id, communityId).catch(() => {});
+
     res.json({ success: true, data: rating });
   } catch (error) {
     console.error('Error submitting rating:', error);
@@ -412,6 +415,64 @@ router.get('/:id/ratings', async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ success: false, error: 'Failed to fetch ratings' });
   }
 });
+
+// ==================== Post-rating score refresh ====================
+
+async function refreshAfterRating(campaignId: string, communityId: string): Promise<void> {
+  try {
+    // 1. Refresh community scoreCache immediately
+    const score = await computeCommunityScore(communityId);
+    await prisma.community.update({ where: { id: communityId }, data: { scoreCache: score } });
+
+    // 2. Find the CA who executed this community for this campaign
+    const execution = await prisma.campaignExecution.findFirst({
+      where: { campaignId, communityId },
+      select: { caId: true },
+    });
+    if (!execution) return;
+
+    // 3. All communities this CA has ever executed
+    const caExecutions = await prisma.campaignExecution.findMany({
+      where: { caId: execution.caId },
+      select: { communityId: true },
+    });
+    const communityIds = [...new Set(caExecutions.map((e) => e.communityId))];
+
+    // 4. Aggregate ratings across all those communities
+    const agg = await prisma.communityRating.aggregate({
+      where: { communityId: { in: communityIds } },
+      _avg: { engagement: true, relevance: true, quality: true, speed: true, professionalism: true },
+      _count: { id: true },
+    });
+    if (agg._count.id === 0) return;
+
+    const overall =
+      ((agg._avg.engagement ?? 0) +
+        (agg._avg.relevance ?? 0) +
+        (agg._avg.quality ?? 0) +
+        (agg._avg.speed ?? 0) +
+        (agg._avg.professionalism ?? 0)) /
+      5;
+
+    await prisma.communityAgent.update({
+      where: { id: execution.caId },
+      data: {
+        reputation: {
+          avgEngagement:      Math.round((agg._avg.engagement      ?? 0) * 100) / 100,
+          avgRelevance:       Math.round((agg._avg.relevance        ?? 0) * 100) / 100,
+          avgQuality:         Math.round((agg._avg.quality          ?? 0) * 100) / 100,
+          avgSpeed:           Math.round((agg._avg.speed            ?? 0) * 100) / 100,
+          avgProfessionalism: Math.round((agg._avg.professionalism  ?? 0) * 100) / 100,
+          overallScore:       Math.round(overall * 100) / 100,
+          totalRatings:       agg._count.id,
+          lastUpdated:        new Date().toISOString(),
+        },
+      },
+    });
+  } catch (err) {
+    console.error('[Ratings] Score/reputation refresh failed:', err);
+  }
+}
 
 // ==================== Offer Distribution ====================
 

@@ -423,6 +423,9 @@ export default function CampaignDetailPage() {
   const completedPct = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
   const inProgressPct = totalCount > 0 ? (inProgressCount / totalCount) * 100 : 0;
   const canRate = campaign.status === 'completed' && !!address;
+  const ratedCount = Object.keys(ratings).length;
+  const unratedCount = campaign.communities.filter(({ community }) => !ratings[community.id]).length;
+  const showRatingBanner = canRate && unratedCount > 0;
 
   const statusColor: Record<string, string> = {
     active: 'text-secondary bg-secondary/20', completed: 'text-primary bg-primary/20',
@@ -442,6 +445,27 @@ export default function CampaignDetailPage() {
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* Rating prompt banner */}
+        {showRatingBanner && (
+          <div className="mb-6 rounded-lg border border-primary/30 bg-primary/5 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="font-semibold text-text-primary">Campaign completed — please rate the communities</p>
+              <p className="text-text-secondary text-sm mt-0.5">
+                Your ratings influence community rankings and help advertisers make better choices.
+                {ratedCount > 0
+                  ? ` You've rated ${ratedCount} of ${totalCount} communities.`
+                  : ` ${unratedCount} ${unratedCount === 1 ? 'community' : 'communities'} awaiting your review.`}
+              </p>
+            </div>
+            <a
+              href="#communities"
+              className="shrink-0 inline-block bg-primary hover:bg-primary-dark text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Rate Communities
+            </a>
+          </div>
+        )}
 
         {/* Campaign summary metrics */}
         <CampaignSummary campaign={campaign} />
@@ -535,10 +559,14 @@ export default function CampaignDetailPage() {
         </div>
 
         {/* Communities + execution details */}
-        <div className="bg-background-secondary border border-border rounded-lg mb-6">
+        <div id="communities" className="bg-background-secondary border border-border rounded-lg mb-6">
           <div className="px-6 py-4 border-b border-border flex items-center justify-between">
             <h2 className="text-lg font-semibold text-text-primary">Communities & Execution</h2>
-            {canRate && <span className="text-sm text-text-secondary">Click Rate to review a community</span>}
+            {canRate && (
+              <span className="text-sm text-text-secondary">
+                {unratedCount > 0 ? `${unratedCount} unrated · click Rate to review` : 'All communities rated ✓'}
+              </span>
+            )}
           </div>
           <div className="divide-y divide-border">
             {campaign.communities.map(({ community }) => (

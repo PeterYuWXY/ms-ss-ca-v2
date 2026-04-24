@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/Header';
-// Campaign rows are intentionally non-clickable — no detail drill-down to protect advertiser privacy.
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -90,6 +89,7 @@ export default function CampaignsPage() {
                   <th className="px-6 py-3 text-left text-sm font-medium text-text-secondary">Duration</th>
                   <th className="px-6 py-3 text-left text-sm font-medium text-text-secondary">Budget</th>
                   <th className="px-6 py-3 text-left text-sm font-medium text-text-secondary">Created</th>
+                  <th className="px-6 py-3 text-left text-sm font-medium text-text-secondary"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -107,20 +107,21 @@ export default function CampaignsPage() {
 
 function CampaignRow({ campaign }: { campaign: Campaign }) {
   const statusColors: Record<string, string> = {
-    draft: 'bg-gray-500/20 text-gray-400',
-    pending: 'bg-yellow-500/20 text-yellow-400',
-    active: 'bg-green-500/20 text-green-400',
-    completed: 'bg-blue-500/20 text-blue-400',
-    cancelled: 'bg-red-500/20 text-red-400',
+    draft: 'bg-background-tertiary text-text-muted',
+    pending: 'bg-accent/10 text-accent',
+    active: 'bg-secondary/10 text-secondary',
+    completed: 'bg-primary/10 text-primary',
+    cancelled: 'bg-danger/10 text-danger',
   };
 
   const communityCount = campaign.config.communityCount ?? campaign.communities?.length ?? '-';
   const createdAt = new Date(campaign.createdAt).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   });
+  const isCompleted = campaign.status === 'completed';
 
   return (
-    <tr>
+    <tr className="hover:bg-background-tertiary transition-colors">
       <td className="px-6 py-4">
         <span className="font-medium text-text-primary capitalize">
           {Array.isArray(campaign.config.objective)
@@ -129,7 +130,7 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
         </span>
       </td>
       <td className="px-6 py-4">
-        <span className={`inline-block px-2 py-1 rounded-full text-xs ${statusColors[campaign.status] ?? 'bg-border text-text-secondary'}`}>
+        <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusColors[campaign.status] ?? 'bg-border text-text-secondary'}`}>
           {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
         </span>
       </td>
@@ -137,6 +138,18 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
       <td className="px-6 py-4 text-text-primary">{formatDuration(campaign.config)}</td>
       <td className="px-6 py-4 text-text-primary">{formatAmount(campaign.payment?.totalAmount)}</td>
       <td className="px-6 py-4 text-text-secondary text-sm">{createdAt}</td>
+      <td className="px-6 py-4">
+        <Link
+          href={`/campaigns/${campaign.id}`}
+          className={`text-sm font-medium transition-colors ${
+            isCompleted
+              ? 'text-primary hover:text-primary-dark underline'
+              : 'text-text-muted hover:text-text-secondary'
+          }`}
+        >
+          {isCompleted ? 'Rate →' : 'View →'}
+        </Link>
+      </td>
     </tr>
   );
 }
