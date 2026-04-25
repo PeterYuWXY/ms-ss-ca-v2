@@ -6,7 +6,9 @@ import dns from 'dns';
 import crypto from 'crypto';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import { registerShillingHandlers, restoreActiveExecutions, startExecution, getActiveExecutionsByCommunity } from './handlers/shilling.js';
+import { registerMarketHandlers } from './handlers/market.js';
 import { acceptOffer, rejectOffer } from './services/msApi.js';
+import { setPendingReferrer, claimReferral } from './services/referral.js';
 
 // Escape Telegram Markdown v1 special characters in user-provided text
 function escapeMd(text: string): string {
@@ -156,6 +158,24 @@ bot.command('start', async (ctx) => {
   const text = ctx.message?.text ?? '';
   const payload = text.split(' ')[1];
 
+  if (payload?.startsWith('invite_')) {
+    const referrerId = payload.slice('invite_'.length);
+    const userId = ctx.from?.id;
+    if (userId && referrerId) await setPendingReferrer(userId, referrerId);
+
+    await ctx.reply(
+      `👋 Hey! I'm *MSCommunityAgent* — your community's marketing co-pilot.\n\n` +
+      `You were invited by a friend! Register your Telegram group to start earning USDT from crypto campaigns.\n\n` +
+      `📋 *How to get started:*\n` +
+      `1️⃣ Visit the MS Platform and click *"Claim a Bot"*\n` +
+      `2️⃣ Follow the link back here to connect your wallet\n` +
+      `3️⃣ Add me to your group as Admin\n\n` +
+      `Use the buttons below once you have your wallet linked:`,
+      { parse_mode: 'Markdown', ...mainKeyboard },
+    );
+    return;
+  }
+
   if (payload?.startsWith('register_')) {
     const walletAddress = payload.slice('register_'.length);
 
@@ -238,6 +258,18 @@ bot.command('register', async (ctx) => {
 
     const communityId = response.data?.data?.id ?? 'unknown';
     pendingRegistrations.delete(userId);
+
+    // Link referral if this user was invited
+    claimReferral(userId, communityId).then(async (referrerId) => {
+      if (!referrerId) return;
+      try {
+        await ctx.telegram.sendMessage(
+          referrerId,
+          `🎉 *Referral success!*\n\nA group owner you invited just registered their community. Keep sharing your link — more referrals = more bonus earnings!`,
+          { parse_mode: 'Markdown' },
+        );
+      } catch { /* referrer may have blocked the bot */ }
+    }).catch(() => {});
 
     // Group message: soft & non-intrusive — explicitly remove any keyboard so group members never see the buttons
     await ctx.reply(
@@ -752,6 +784,10 @@ bot.action(/^savetopics:(.+)$/, async (ctx) => {
     await ctx.reply('❌ Could not save topics. Please try again later.');
   }
 });
+
+// ==================== Market features (token lookup, cron jobs) ====================
+
+registerMarketHandlers(bot);
 
 // ==================== Small talk → keyboard ====================
 
