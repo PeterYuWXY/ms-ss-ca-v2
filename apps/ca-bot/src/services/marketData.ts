@@ -63,9 +63,18 @@ export async function fetchTokenData(query: string): Promise<TokenInfo | null> {
     const pairs: any[] = res.data?.pairs ?? [];
     if (pairs.length === 0) return null;
 
-    // Pick the pair with highest liquidity
-    const best = pairs.reduce((a, b) =>
-      (b.liquidity?.usd ?? 0) > (a.liquidity?.usd ?? 0) ? b : a
+    // Keep only actively traded pairs (>$1k/day) so ghost pools with stale prices are ignored.
+    // Among those, prefer a USD stablecoin quote so the price is in USD terms,
+    // then sort by 24h volume — the highest-volume pair has the most accurate live price.
+    const STABLE = new Set(['USDT', 'USDC', 'BUSD', 'DAI', 'FDUSD', 'TUSD']);
+    const active = pairs.filter(p => (p.volume?.h24 ?? 0) > 1000);
+    const pool   = active.length > 0 ? active : pairs;
+
+    const stablePairs = pool.filter(p => STABLE.has(p.quoteToken?.symbol?.toUpperCase() ?? ''));
+    const candidates  = stablePairs.length > 0 ? stablePairs : pool;
+
+    const best = candidates.reduce((a, b) =>
+      (b.volume?.h24 ?? 0) > (a.volume?.h24 ?? 0) ? b : a
     );
 
     return {
