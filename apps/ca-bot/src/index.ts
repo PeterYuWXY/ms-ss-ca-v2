@@ -898,6 +898,14 @@ notifyServer.listen(NOTIFY_PORT, () => {
 
 // ==================== Launch ====================
 
+// Keep the process alive on unhandled async errors — log and continue.
+process.on('unhandledRejection', (reason) => {
+  console.error('[UnhandledRejection]', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[UncaughtException]', err);
+});
+
 bot.launch();
 console.log('🤖 MSCommunityAgent Bot started (@MSCommunityAgent_bot)');
 

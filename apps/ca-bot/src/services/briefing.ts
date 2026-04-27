@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { Telegraf } from 'telegraf';
+import { prisma } from '@ms/database';
 import { formatChange, escapeMd } from '../utils/format.js';
 import { t, type Lang } from '../i18n/index.js';
 
@@ -149,18 +150,25 @@ export async function broadcastBriefing(bot: Telegraf): Promise<void> {
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
 
+/**
+ * Returns all registered Telegram groups directly from the database.
+ * No dependency on MS API — bot can broadcast even when the API service is down.
+ */
 export async function getRegisteredGroups(): Promise<{ chatId: string; lang: Lang }[]> {
   try {
-    const MS_API_URL = process.env.MS_API_URL ?? 'http://localhost:3001';
-    const res = await axios.get(`${MS_API_URL}/api/v1/communities?limit=500`, { timeout: 10000 });
-    const communities: any[] = res.data?.data ?? [];
+    const communities = await prisma.community.findMany({
+      where:  { caBotId: { not: null }, status: 'active' },
+      select: { caBotId: true, language: true },
+      take:   500,
+    });
     return communities
       .filter(c => c.caBotId)
       .map(c => ({
-        chatId: String(c.caBotId),
-        lang:   (c.language?.[0] ?? 'en') as Lang,
+        chatId: c.caBotId!,
+        lang:   (c.language[0] ?? 'en') as Lang,
       }));
-  } catch {
+  } catch (err) {
+    console.error('[getRegisteredGroups] DB error:', err);
     return [];
   }
 }
