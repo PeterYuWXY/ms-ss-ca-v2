@@ -896,6 +896,31 @@ notifyServer.listen(NOTIFY_PORT, () => {
   console.log(`🔔 Notification server listening on port ${NOTIFY_PORT}`);
 });
 
+// ==================== Admin test commands ====================
+// Only respond to the bot owner's Telegram ID (set ADMIN_TELEGRAM_ID in .env).
+
+const ADMIN_ID = process.env.ADMIN_TELEGRAM_ID ? parseInt(process.env.ADMIN_TELEGRAM_ID) : null;
+
+function isAdmin(ctx: any): boolean {
+  return ADMIN_ID !== null && ctx.from?.id === ADMIN_ID;
+}
+
+bot.command('testbrief', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  await ctx.reply('⏳ Sending daily briefing to all groups…');
+  const { broadcastBriefing } = await import('./services/briefing.js');
+  await broadcastBriefing(bot);
+  await ctx.reply('✅ Briefing sent.');
+});
+
+bot.command('testtrending', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  await ctx.reply('⏳ Sending trending radar to all groups…');
+  const { broadcastRadar } = await import('./services/newTokens.js');
+  await broadcastRadar(bot);
+  await ctx.reply('✅ Trending radar sent.');
+});
+
 // ==================== Launch ====================
 
 // Keep the process alive on unhandled async errors — log and continue.
