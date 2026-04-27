@@ -791,10 +791,10 @@ registerMarketHandlers(bot);
 
 // ==================== Small talk → keyboard ====================
 
-bot.on('text', async (ctx) => {
+bot.on('text', async (ctx, next) => {
   const text = ctx.message?.text ?? '';
-  // Skip if it's a command or keyboard button
-  if (text.startsWith('/') || ['📋 New Offers', '⚡ Active Tasks', '💰 My Earnings', '📊 Past Campaigns'].includes(text)) return;
+  // Skip if it's a command or keyboard button — pass to next handler (e.g. bot.command)
+  if (text.startsWith('/') || ['📋 New Offers', '⚡ Active Tasks', '💰 My Earnings', '📊 Past Campaigns'].includes(text)) return next();
 
   // In groups: only respond to admins
   const chat = ctx.chat;

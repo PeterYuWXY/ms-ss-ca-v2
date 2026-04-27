@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { Telegraf } from 'telegraf';
 import { prisma } from '@ms/database';
-import { formatChange, escapeMd } from '../utils/format.js';
+import { formatChange, escapeHtml } from '../utils/format.js';
 import { t, type Lang } from '../i18n/index.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -107,8 +107,8 @@ export function buildBriefingMessage(data: BriefingData, lang: Lang, botname: st
 
   return (
     `${t(lang, 'briefing.title')}\n` +
-    `_${escapeMd(dateStr)}_\n\n` +
-    `\`${priceLines}\`\n\n` +
+    `<i>${escapeHtml(dateStr)}</i>\n\n` +
+    `<pre>${escapeHtml(priceLines)}</pre>\n` +
     fgLine +
     gainerLines +
     `\n\n${t(lang, 'briefing.tip')}\n` +
@@ -140,7 +140,7 @@ export async function broadcastBriefing(bot: Telegraf): Promise<void> {
       msgCache[lang] = buildBriefingMessage(data, lang, botname);
     }
     try {
-      await bot.telegram.sendMessage(chatId, msgCache[lang]!, { parse_mode: 'Markdown' });
+      await bot.telegram.sendMessage(chatId, msgCache[lang]!, { parse_mode: 'HTML' });
       await sleep(60); // ~16 groups/sec — within Telegram's 30 msg/sec limit
     } catch (err: any) {
       console.warn(`[Briefing] Failed to send to ${chatId}:`, err?.description ?? err?.message);

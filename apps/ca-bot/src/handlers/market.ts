@@ -66,7 +66,7 @@ export function registerMarketHandlers(bot: Telegraf): void {
     const msg = buildTokenMessage(token, sec, lang);
 
     await ctx.reply(msg, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       ...Markup.inlineKeyboard([[Markup.button.url(t(lang, 'token.viewChart'), token.url)]]),
     });
 
@@ -86,7 +86,7 @@ export function registerMarketHandlers(bot: Telegraf): void {
       const botname = ctx.botInfo?.username ?? 'MSCommunityAgent_bot';
       const tokens  = await fetchTrendingTokens();
       const msg     = buildRadarMessage(tokens, lang, botname);
-      if (msg) await ctx.reply(msg, { parse_mode: 'Markdown' });
+      if (msg) await ctx.reply(msg, { parse_mode: 'HTML' });
     } catch {
       await ctx.reply(t(lang, 'error.generic'));
     }
@@ -102,7 +102,7 @@ export function registerMarketHandlers(bot: Telegraf): void {
       const botname = ctx.botInfo?.username ?? 'MSCommunityAgent_bot';
       const [entries, total] = await Promise.all([getWeeklyLeaderboard(10), getTotalQueriesThisWeek()]);
       const msg = buildLeaderboardMessage(entries, total, getWeekId(), 'en', botname);
-      await ctx.reply(msg, { parse_mode: 'Markdown' });
+      await ctx.reply(msg, { parse_mode: 'HTML' });
     } catch {
       await ctx.reply(t('en', 'error.generic'));
     }
@@ -134,7 +134,7 @@ export function registerMarketHandlers(bot: Telegraf): void {
         `${t(commLang, 'referral.desc')}\n` +
         `${t(commLang, 'referral.link', { link })}\n\n` +
         t(commLang, 'referral.reward'),
-        { parse_mode: 'Markdown' },
+        { parse_mode: 'HTML' },
       );
     } catch {
       await ctx.reply(t('en', 'error.generic'));

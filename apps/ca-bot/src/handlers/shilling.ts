@@ -578,9 +578,9 @@ export function registerShillingHandlers(bot: Telegraf): void {
   });
 
   // Detect when a message gets pinned by anyone (catches manual pins by admin)
-  bot.on('message', async (ctx) => {
+  bot.on('message', async (ctx, next) => {
     const msg = ctx.message as any;
-    if (!msg?.pinned_message) return;
+    if (!msg?.pinned_message) return next();
 
     const chatId = ctx.chat?.id;
     const all = await getAllActiveStates();

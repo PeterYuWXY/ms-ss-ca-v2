@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type { Telegraf } from 'telegraf';
-import { formatChange, formatBigNum } from '../utils/format.js';
+import { formatChange, formatBigNum, escapeMd } from '../utils/format.js';
 import { t, type Lang } from '../i18n/index.js';
 import { getRegisteredGroups } from './briefing.js';
 
@@ -79,7 +79,7 @@ export function buildRadarMessage(tokens: TrendingToken[], lang: Lang, botname: 
   if (tokens.length === 0) return '';
 
   const lines = tokens.map(tok =>
-    `${tok.rank}. *${tok.symbol}*  ${formatChange(tok.change24h)}  ${tok.marketCap}`
+    `${tok.rank}. <b>${tok.symbol}</b>  ${formatChange(tok.change24h)}  ${tok.marketCap}`
   ).join('\n');
 
   return (
@@ -116,7 +116,7 @@ export async function broadcastRadar(bot: Telegraf): Promise<void> {
     const msg = msgCache[lang];
     if (!msg) continue;
     try {
-      await bot.telegram.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
+      await bot.telegram.sendMessage(chatId, msg, { parse_mode: 'HTML' });
       await sleep(60);
     } catch (err: any) {
       console.warn(`[Radar] Failed to send to ${chatId}:`, err?.description ?? err?.message);

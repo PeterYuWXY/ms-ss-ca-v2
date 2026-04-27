@@ -80,7 +80,7 @@ export function buildLeaderboardMessage(
   if (entries.length === 0) {
     return (
       `${t(lang, 'lb.title')}\n` +
-      `_${weekLabel}_\n\n` +
+      `<i>${weekLabel}</i>\n\n` +
       t(lang, 'lb.empty') + '\n\n' +
       t(lang, 'lb.join') + '\n' +
       t(lang, 'lb.powered', { botname })
@@ -95,8 +95,8 @@ export function buildLeaderboardMessage(
 
   return (
     `${t(lang, 'lb.title')}\n` +
-    `_${weekLabel}_\n\n` +
-    `\`${lines}\`\n\n` +
+    `<i>${weekLabel}</i>\n\n` +
+    `<pre>${lines}</pre>\n\n` +
     t(lang, 'lb.total', { total: total.toLocaleString('en-US') }) + '\n\n' +
     t(lang, 'lb.join') + '\n' +
     t(lang, 'lb.powered', { botname })
@@ -121,7 +121,7 @@ export async function broadcastLeaderboard(bot: Telegraf): Promise<void> {
       msgCache[lang] = buildLeaderboardMessage(entries, total, week, lang, botname);
     }
     try {
-      await bot.telegram.sendMessage(chatId, msgCache[lang]!, { parse_mode: 'Markdown' });
+      await bot.telegram.sendMessage(chatId, msgCache[lang]!, { parse_mode: 'HTML' });
       await sleep(60);
     } catch (err: any) {
       console.warn(`[Leaderboard] Failed to send to ${chatId}:`, err?.description ?? err?.message);

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { formatPrice, formatBigNum, formatChange, getKeyLevels, escapeMd } from '../utils/format.js';
+import { formatPrice, formatBigNum, formatChange, getKeyLevels, escapeHtml } from '../utils/format.js';
 import { t, type Lang } from '../i18n/index.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -174,7 +174,7 @@ export function buildTokenMessage(token: TokenInfo, sec: SecurityInfo | null, la
     `(🟢 ${token.txnsBuys24h.toLocaleString('en-US')} / 🔴 ${token.txnsSells24h.toLocaleString('en-US')})\n` +
     secLine +
     levelsLine +
-    `\n\n${escapeMd(t(lang, 'token.powered'))}`
+    `\n\n${t(lang, 'token.powered')}`
   );
 }
 
